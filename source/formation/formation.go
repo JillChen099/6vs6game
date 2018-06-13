@@ -10,6 +10,7 @@ package formation
 import (
 	"6vs6game/source/knights"
 	"errors"
+	"6vs6game/source/skills"
 )
 
 type IFormation interface {
@@ -103,11 +104,11 @@ func (f *Formation) generateDoubleColumn() []knights.IKnight {
 
 
 //生成单个骑士对象
-func (f *Formation)generateSingle() knights.IKnight {
+func (f *Formation)generateSingle() []knights.IKnight {
 	for i:=0;i<f.rows ;i++  {
 		for j:=0;j<f.columns;j++ {
 			if !f.position[i][j].IsDead() {
-				return f.position[i][j]
+				return []knights.IKnight{f.position[i][j]}
 			}
 		}
 
@@ -116,3 +117,18 @@ func (f *Formation)generateSingle() knights.IKnight {
 }
 
 
+//根据敌方postion和我方骑士技能生成被攻击的骑士对象列表
+func NewBeattackedKnights(formation *Formation,knight knights.IKnight ) []knights.IKnight {
+	switch knight.RandomOneActiveSkill().AttackRange {
+	case skills.HorsemanshipAttack:
+		return formation.generateDoubleColumn()
+	case skills.SwordsmanshipAttack:
+		return formation.generateSingle()
+	case skills.ShieldHitAttack:
+		return formation.generateSingleColumn()
+	default:
+		return formation.generateSingleRow()
+	}
+
+
+}

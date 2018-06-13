@@ -16,7 +16,8 @@ type IKnight interface {
 	ReleaseAttack(beattacker ...IKnight) //发动攻击
 	IsDead() bool      //是否死亡
 	IncreaseDamage()  //增加技能伤害
-	SufferDamage(attacker IKnight)  //遭受攻击
+	SufferDamage(damage int)  //遭受攻击
+	RandomOneActiveSkill() *skills.ActiveSkill  //随机发动一个技能
 }
 
 
@@ -28,10 +29,13 @@ type Knight struct {
 	HorsemanshipNum   int   //骑术
 	ShieldHitNum     int  //盾术
 	ThrowingNum      int  //投掷
-	CurrentSkills *skills.ActiveSkill
 
 }
 
+
+func (k *Knight) SufferDamage(damage int) {
+	k.HP = k.HP - damage
+}
 
 func (k *Knight) IsDead() bool{
 	return k.HP <= 0
@@ -40,7 +44,7 @@ func (k *Knight) IsDead() bool{
 
 
 //随机发动一个主动技能
-func (k *Knight) randomOneActiveSkill() {
+func (k *Knight) RandomOneActiveSkill() *skills.ActiveSkill {
 
 	newActiveSkill := new(skills.ActiveSkill)
 	allAttributes := float64(k.ThrowingNum+k.SwordsmanshipNum+k.ShieldHitNum+k.HorsemanshipNum)
@@ -55,23 +59,25 @@ func (k *Knight) randomOneActiveSkill() {
 		newActiveSkill.AttackRange = skills.SwordsmanshipAttack
 		newActiveSkill.Name = "剑刺"
 		newActiveSkill.Damage = int(float64(k.SwordsmanshipNum) * swp)
+		return newActiveSkill
 
 	case skills.ThrowingAttack:
 		newActiveSkill.AttackRange = skills.ThrowingAttack
 		newActiveSkill.Name = "长矛攻击"
 		newActiveSkill.Damage = int(float64(k.ThrowingNum)*tp)
-
+		return newActiveSkill
 	case skills.ShieldHitAttack:
 		newActiveSkill.AttackRange = skills.ShieldHitAttack
 		newActiveSkill.Name = "盾击"
 		newActiveSkill.Damage = int(float64(k.ShieldHitNum)*shp)
+		return newActiveSkill
 	default :
 		newActiveSkill.AttackRange = skills.HorsemanshipAttack
 		newActiveSkill.Name = "骑兵冲锋"
 		newActiveSkill.Damage = int(float64(k.ShieldHitNum)*shp)
+		return newActiveSkill
 
 	}
-	k.CurrentSkills = newActiveSkill
 
 }
 
