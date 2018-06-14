@@ -11,53 +11,97 @@ import (
 	"6vs6game/source/knights"
 	"errors"
 	"6vs6game/source/skills"
+	"fmt"
 )
 
 type IFormation interface {
 	generateSingleRow() []knights.IKnight  //生成一行骑士对象
 	generateSingleColumn() []knights.IKnight  //生成一列骑士对象。
 	generateDoubleColumn() []knights.IKnight  //生成两列骑士对象
-	generateSingle() knights.IKnight           //生成单个骑士对象，从左到右,从上到下
+	generateSingle() []knights.IKnight           //生成被攻击单个骑士对象，从左到右,从上到下
+	IsAllDead() bool
 }
 
 
 
 
+//判断骑士是否全部死亡
+func (f *Formation)IsAllDead() bool {
+	for i:=0; i<f.Rows ;i++ {
+		for j := 0; j < f.Columns; j++ {
+			if !f.Position[i][j].IsDead() {
+				return false
+			}
+		}
+	}
+	return true
+
+}
 
 type Formation struct {
-	position [][]knights.IKnight
-	rows        int     //行数量
-	columns      int     //列数量
+	Position [][]knights.IKnight
+	Rows        int     //行数量
+	Columns      int     //列数量
+	currentX      int     //当前出战的骑士行坐标
+	currentY     int       //当前出站的骑士列坐标
 }
 
+
+
+
+
+
 //生成一个新阵型布局。
-func NewFormation(rows,columns int,knights ...knights.IKnight) error {
-	if len(knights) != rows*columns {
-		return errors.New("骑士数量不符合要求")
+func NewFormation(rows,columns int,k ...knights.IKnight) (*Formation,error) {
+	if len(k) != rows*columns {
+		return nil,errors.New("骑士数量不符合要求")
 	}
 	f := new(Formation)
-	f.rows = rows
-	f.columns = columns
-	var position [][]knights.IKnight
+	f.Rows = rows
+	f.Columns = columns
+	var position  [][]knights.IKnight
 	for i:=0;i<rows;i++ {
-		singleRow := make([]knights.IKnight,columns)
+		var singleRow []knights.IKnight
 		for j:=i*columns;j<(i+1)*columns;j++{
-			singleRow = append(singleRow,knights[j])
+			singleRow = append(singleRow,k[j])
 		}
 		position = append(position,singleRow)
 	}
-	f.position = position
+	f.Position = position
+	f.currentX = -1
+	f.currentY = -1
+	return f,nil
+
+}
+
+// 生成一个待攻击的骑士
+func (f *Formation) GenerateOneKnight() knights.IKnight {
+	if f.currentX == f.Rows-1 && f.currentY == f.Columns-1 {
+		f.currentX = -1
+		f.currentY = -1
+	}
+
+	for i:=0; i<f.Rows;i++ {
+		for j:=0;j<f.Columns;j++ {
+			if !f.Position[i][j].IsDead() && (i>f.currentX || j> f.currentY) {
+				f.currentX = i
+				f.currentY = j
+				return f.Position[i][j]
+			}
+		}
+	}
 	return nil
+
 
 }
 
 //生成一行骑士对象
 func (f *Formation) generateSingleRow() []knights.IKnight {
-	singleRow := make([]knights.IKnight,f.columns)
-	for i:=0;i<f.rows ; i++ {
-		for j:=0;j<f.columns ;j++  {
-			if !f.position[i][j].IsDead() {
-				singleRow = append(singleRow,f.position[i][j])
+	var singleRow []knights.IKnight
+	for i:=0;i<f.Rows ; i++ {
+		for j:=0;j<f.Columns ;j++  {
+			if !f.Position[i][j].IsDead() {
+				singleRow = append(singleRow,f.Position[i][j])
 			}
 
 		}
@@ -70,11 +114,11 @@ func (f *Formation) generateSingleRow() []knights.IKnight {
 
 //生成一列骑士对象
 func (f *Formation) generateSingleColumn() []knights.IKnight  {
-	singleColumn := make([]knights.IKnight,f.rows)
-	for i:=0;i<f.rows ;i++  {
-		for j:=0;j<f.columns;j++ {
-			if !f.position[i][j].IsDead() {
-				singleColumn = append(singleColumn,f.position[i][j])
+	var singleColumn  []knights.IKnight
+	for i:=0;i<f.Rows ;i++  {
+		for j:=0;j<f.Columns;j++ {
+			if !f.Position[i][j].IsDead() {
+				singleColumn = append(singleColumn,f.Position[i][j])
 				break
 			}
 
@@ -87,13 +131,13 @@ func (f *Formation) generateSingleColumn() []knights.IKnight  {
 
 //生成两列骑士对象
 func (f *Formation) generateDoubleColumn() []knights.IKnight {
-	doubleColumn := make([]knights.IKnight,f.rows * 2)
-	for i:=0; i<f.rows ;i++  {
-		for j:=0;j<f.columns ;j++  {
-			if !f.position[i][j].IsDead() {
-				doubleColumn =append(doubleColumn,f.position[i][j])
-				if j+1 < f.columns && !f.position[i][j+1].IsDead() {
-					doubleColumn = append(doubleColumn,f.position[i][j+1])
+	var doubleColumn []knights.IKnight
+	for i:=0; i<f.Rows ;i++  {
+		for j:=0;j<f.Columns ;j++  {
+			if !f.Position[i][j].IsDead() {
+				doubleColumn =append(doubleColumn,f.Position[i][j])
+				if j+1 < f.Columns && !f.Position[i][j+1].IsDead() {
+					doubleColumn = append(doubleColumn,f.Position[i][j+1])
 				}
 				break
 			}
@@ -105,10 +149,10 @@ func (f *Formation) generateDoubleColumn() []knights.IKnight {
 
 //生成单个骑士对象
 func (f *Formation)generateSingle() []knights.IKnight {
-	for i:=0;i<f.rows ;i++  {
-		for j:=0;j<f.columns;j++ {
-			if !f.position[i][j].IsDead() {
-				return []knights.IKnight{f.position[i][j]}
+	for i:=0;i<f.Rows ;i++  {
+		for j:=0;j<f.Columns;j++ {
+			if !f.Position[i][j].IsDead() {
+				return []knights.IKnight{f.Position[i][j]}
 			}
 		}
 
@@ -117,9 +161,23 @@ func (f *Formation)generateSingle() []knights.IKnight {
 }
 
 
-//根据敌方postion和我方骑士技能生成被攻击的骑士对象列表
+//显示阵容
+func (f *Formation) Display() {
+	var showString string
+	for i:=0;i<f.Rows ;i++  {
+		showString = showString + "\n------------------------------\n"
+		for j:=0;j<f.Columns;j++ {
+				showString =showString + fmt.Sprintf(" %s:%d |",f.Position[i][j].GetName(),f.Position[i][j].GetCurrrentHp())
+			}
+	}
+	fmt.Println(showString)
+
+}
+
+//根据敌方postion和我方骑士技能攻击范围生成被攻击的骑士对象列表
 func NewBeattackedKnights(formation *Formation,knight knights.IKnight ) []knights.IKnight {
-	switch knight.RandomOneActiveSkill().AttackRange {
+	s := knight.RandomOneActiveSkill()
+	switch s.AttackRange {
 	case skills.HorsemanshipAttack:
 		return formation.generateDoubleColumn()
 	case skills.SwordsmanshipAttack:
@@ -130,5 +188,5 @@ func NewBeattackedKnights(formation *Formation,knight knights.IKnight ) []knight
 		return formation.generateSingleRow()
 	}
 
-
 }
+

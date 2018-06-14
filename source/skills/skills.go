@@ -7,10 +7,6 @@ Content:
 */
 package skills
 
-import (
-
-)
-
 const  (SwordsmanshipAttack = 1 << iota
 		HorsemanshipAttack
 		ShieldHitAttack
