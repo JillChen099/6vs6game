@@ -42,8 +42,7 @@ type Formation struct {
 	Position [][]knights.IKnight
 	Rows        int     //行数量
 	Columns      int     //列数量
-	currentX      int     //当前出战的骑士行坐标
-	currentY     int       //当前出站的骑士列坐标
+	enableAttackKnight []knights.IKnight
 }
 
 
@@ -68,29 +67,28 @@ func NewFormation(rows,columns int,k ...knights.IKnight) (*Formation,error) {
 		position = append(position,singleRow)
 	}
 	f.Position = position
-	f.currentX = -1
-	f.currentY = -1
+	f.enableAttackKnight = k
 	return f,nil
+
 
 }
 
 // 生成一个待攻击的骑士
 func (f *Formation) GenerateOneKnight() knights.IKnight {
-	if f.currentX == f.Rows-1 && f.currentY == f.Columns-1 {
-		f.currentX = -1
-		f.currentY = -1
-	}
-
-	for i:=0; i<f.Rows;i++ {
-		for j:=0;j<f.Columns;j++ {
-			if !f.Position[i][j].IsDead() && (i>f.currentX || j> f.currentY) {
-				f.currentX = i
-				f.currentY = j
-				return f.Position[i][j]
-			}
+	var enableAttackKnight []knights.IKnight
+	for _,v := range f.enableAttackKnight {
+		if !v.IsDead() {
+			enableAttackKnight = append(enableAttackKnight,v)
 		}
 	}
-	return nil
+	if len(enableAttackKnight) > 2 {
+		f.enableAttackKnight = append(enableAttackKnight[1:len(enableAttackKnight)],enableAttackKnight[0])
+		return enableAttackKnight[0]
+	}else if len(enableAttackKnight) >= 1 {
+		return enableAttackKnight[0]
+	}else {
+		return nil
+	}
 
 
 }
